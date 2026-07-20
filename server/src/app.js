@@ -1,3 +1,4 @@
+import errorHandler from "./middleware/error.middleware.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -33,5 +34,8 @@ app.get("/", (req, res) => {
     message: "Welcome to NoteNexus AI Backend 🚀",
   });
 });
+
+// Global Error Middleware
+app.use(errorHandler);
 
 export default app;
