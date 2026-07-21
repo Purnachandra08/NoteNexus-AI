@@ -36,8 +36,9 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/api/v1", routes);
 // Global Error Middleware
 app.use(errorHandler);
 // API Routes
-app.use("/api/v1", routes);
+
 export default app;
