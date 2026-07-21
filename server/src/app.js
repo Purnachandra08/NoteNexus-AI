@@ -1,3 +1,4 @@
+import routes from "./routes/index.js";
 import errorHandler from "./middleware/error.middleware.js";
 import express from "express";
 import cors from "cors";
@@ -37,5 +38,6 @@ app.get("/", (req, res) => {
 
 // Global Error Middleware
 app.use(errorHandler);
-
+// API Routes
+app.use("/api/v1", routes);
 export default app;

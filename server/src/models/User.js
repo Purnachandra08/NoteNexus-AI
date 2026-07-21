@@ -58,21 +58,21 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre("save", async function (next) {
+// Hash password before saving
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
-    return next();
+    return;
   }
 
   this.password = await bcrypt.hash(this.password, 12);
-
-  next();
 });
 
+// Compare entered password with hashed password
 userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
-const isPasswordCorrect = await user.comparePassword(password);
 
+// Generate JWT Access Token
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
@@ -86,6 +86,7 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
+// Generate JWT Refresh Token
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
