@@ -192,6 +192,54 @@ async forgotPassword(email) {
     resetToken,
   };
 }
+
+/**
+ * Reset password
+ */
+async resetPassword(resetToken, newPassword) {
+  if (!resetToken) {
+    throw new ApiError(400, "Reset token is required.");
+  }
+
+  if (!newPassword) {
+    throw new ApiError(400, "New password is required.");
+  }
+
+  // Hash token received from client
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Find user with valid reset token
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: {
+      $gt: Date.now(),
+    },
+  }).select("+resetPasswordToken");
+
+  if (!user) {
+    throw new ApiError(
+      400,
+      "Invalid or expired password reset token."
+    );
+  }
+
+  // Update password
+  user.password = newPassword;
+
+  // Invalidate reset token
+  user.resetPasswordToken = "";
+  user.resetPasswordExpires = null;
+
+  // Invalidate existing refresh token
+  user.refreshToken = "";
+
+  await user.save();
+
+  return true;
+}
 }
 
 export default new AuthService();

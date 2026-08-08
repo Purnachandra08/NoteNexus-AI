@@ -96,4 +96,21 @@ const forgotPassword = asyncHandler(async (req, res) => {
   );
 });
 
-export { register, login, logout, refreshAccessToken, forgotPassword };
+const resetPassword = asyncHandler(async (req, res) => {
+  const { resetToken, newPassword } = req.body;
+
+  await authService.resetPassword(
+    resetToken,
+    newPassword
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      "Password reset successfully.",
+      null
+    )
+  );
+});
+
+export { register, login, logout, refreshAccessToken, forgotPassword, resetPassword };

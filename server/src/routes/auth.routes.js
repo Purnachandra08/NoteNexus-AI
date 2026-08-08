@@ -5,6 +5,7 @@ import {
   logout,
   refreshAccessToken,
   forgotPassword,
+  resetPassword,
 } from "../controllers/auth/auth.controller.js";
 import authenticate from "../middleware/auth.middleware.js";
 
@@ -44,5 +45,12 @@ router.post("/refresh", refreshAccessToken);
  * @access  Public
  */
 router.post("/forgot-password", forgotPassword);
+
+/**
+ * @route   POST /api/v1/auth/reset-password
+ * @desc    Reset user password
+ * @access  Public
+ */
+router.post("/reset-password", resetPassword);
 
 export default router;
