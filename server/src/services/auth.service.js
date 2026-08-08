@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import ApiError from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 class AuthService {
   /**
@@ -154,6 +155,42 @@ async refreshAccessToken(refreshToken) {
   const accessToken = user.generateAccessToken();
 
   return accessToken;
+}
+/**
+ * Forgot password
+ */
+async forgotPassword(email) {
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(
+      404,
+      "No account found with this email."
+    );
+  }
+
+  // Generate secure random reset token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  // Store hashed token in database
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  user.resetPasswordToken = hashedToken;
+
+  // Token valid for 15 minutes
+  user.resetPasswordExpires =
+    Date.now() + 15 * 60 * 1000;
+
+  await user.save({
+    validateBeforeSave: false,
+  });
+
+  return {
+    resetToken,
+  };
 }
 }
 

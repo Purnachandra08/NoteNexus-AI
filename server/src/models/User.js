@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { USER_ROLES, USER_ROLE_VALUES } from "../constants/roles.js";
+import {
+  USER_ROLES,
+  USER_ROLE_VALUES,
+} from "../constants/roles.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -40,6 +43,20 @@ const userSchema = new mongoose.Schema(
     refreshToken: {
       type: String,
       default: "",
+      select: false,
+    },
+
+    // Password reset token
+    resetPasswordToken: {
+      type: String,
+      default: "",
+      select: false,
+    },
+
+    // Password reset token expiration time
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
       select: false,
     },
 
