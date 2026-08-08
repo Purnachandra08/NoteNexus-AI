@@ -61,4 +61,22 @@ const logout = asyncHandler(async (req, res) => {
   );
 });
 
-export { register, login, logout };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  const accessToken = await authService.refreshAccessToken(
+    refreshToken
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      "Access token refreshed successfully.",
+      {
+        accessToken,
+      }
+    )
+  );
+});
+
+export { register, login, logout, refreshAccessToken };

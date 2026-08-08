@@ -3,6 +3,7 @@ import {
   register,
   login,
   logout,
+  refreshAccessToken,
 } from "../controllers/auth/auth.controller.js";
 import authenticate from "../middleware/auth.middleware.js";
 
@@ -28,5 +29,12 @@ router.post("/login", login);
  * @access  Private
  */
 router.post("/logout", authenticate, logout);
+
+/**
+ * @route   POST /api/v1/auth/refresh
+ * @desc    Refresh access token
+ * @access  Public
+ */
+router.post("/refresh", refreshAccessToken);
 
 export default router;

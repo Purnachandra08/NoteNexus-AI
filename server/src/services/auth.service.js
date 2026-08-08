@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import ApiError from "../utils/ApiError.js";
+import jwt from "jsonwebtoken";
 
 class AuthService {
   /**
@@ -109,6 +110,50 @@ async logout(userId) {
   });
 
   return true;
+}
+
+/**
+ * Refresh access token
+ */
+async refreshAccessToken(refreshToken) {
+  if (!refreshToken) {
+    throw new ApiError(401, "Refresh token is required.");
+  }
+
+  const user = await User.findOne({ refreshToken }).select(
+    "+refreshToken"
+  );
+
+  if (!user) {
+    throw new ApiError(401, "Invalid refresh token.");
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(403, "Your account has been deactivated.");
+  }
+
+  let decoded;
+
+  try {
+    decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      throw new ApiError(401, "Refresh token has expired.");
+    }
+
+    throw new ApiError(401, "Invalid refresh token.");
+  }
+
+  if (decoded.id !== user._id.toString()) {
+    throw new ApiError(401, "Invalid refresh token.");
+  }
+
+  const accessToken = user.generateAccessToken();
+
+  return accessToken;
 }
 }
 
