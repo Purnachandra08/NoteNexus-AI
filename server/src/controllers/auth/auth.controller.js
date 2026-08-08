@@ -43,4 +43,22 @@ const login = asyncHandler(async (req, res) => {
   );
 });
 
-export { register, login };
+const logout = asyncHandler(async (req, res) => {
+  await authService.logout(req.user.id);
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      "Logout successful.",
+      null
+    )
+  );
+});
+
+export { register, login, logout };

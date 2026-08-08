@@ -91,6 +91,25 @@ class AuthService {
       refreshToken,
     };
   }
+
+  /**
+ * Logout user
+ */
+async logout(userId) {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  user.refreshToken = "";
+
+  await user.save({
+    validateBeforeSave: false,
+  });
+
+  return true;
+}
 }
 
 export default new AuthService();

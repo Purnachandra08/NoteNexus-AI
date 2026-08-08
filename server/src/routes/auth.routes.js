@@ -2,7 +2,9 @@ import { Router } from "express";
 import {
   register,
   login,
+  logout,
 } from "../controllers/auth/auth.controller.js";
+import authenticate from "../middleware/auth.middleware.js";
 
 const router = Router();
 
@@ -19,5 +21,12 @@ router.post("/register", register);
  * @access  Public
  */
 router.post("/login", login);
+
+/**
+ * @route   POST /api/v1/auth/logout
+ * @desc    Logout authenticated user
+ * @access  Private
+ */
+router.post("/logout", authenticate, logout);
 
 export default router;
