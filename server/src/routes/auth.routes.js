@@ -7,6 +7,7 @@ import {
   forgotPassword,
   resetPassword,
   sendVerificationEmail,
+  verifyEmail,
 } from "../controllers/auth/auth.controller.js";
 import authenticate from "../middleware/auth.middleware.js";
 
@@ -60,5 +61,12 @@ router.post("/reset-password", resetPassword);
  * @access  Public
  */
 router.post("/send-verification", sendVerificationEmail);
+
+/**
+ * @route   POST /api/v1/auth/verify-email
+ * @desc    Verify user email
+ * @access  Public
+ */
+router.post("/verify-email", verifyEmail);
 
 export default router;

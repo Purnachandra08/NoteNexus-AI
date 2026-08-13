@@ -128,4 +128,18 @@ const sendVerificationEmail = asyncHandler(async (req, res) => {
   );
 });
 
-export { register, login, logout, refreshAccessToken, forgotPassword, resetPassword, sendVerificationEmail };
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { verificationToken } = req.body;
+
+  await authService.verifyEmail(verificationToken);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      "Email verified successfully.",
+      null
+    )
+  );
+});
+
+export { register, login, logout, refreshAccessToken, forgotPassword, resetPassword, sendVerificationEmail, verifyEmail };
