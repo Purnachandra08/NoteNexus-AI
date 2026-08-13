@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import ApiError from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import sendEmail from "../utils/sendEmail.js";
 
 class AuthService {
   /**
@@ -240,7 +241,6 @@ async resetPassword(resetToken, newPassword) {
 
   return true;
 }
-
 /**
  * Send email verification
  */
@@ -255,18 +255,14 @@ async sendVerificationEmail(userId) {
     throw new ApiError(400, "Email is already verified.");
   }
 
-  // Generate secure verification token
   const verificationToken = crypto.randomBytes(32).toString("hex");
 
-  // Hash token before storing it in database
   const hashedToken = crypto
     .createHash("sha256")
     .update(verificationToken)
     .digest("hex");
 
   user.emailVerificationToken = hashedToken;
-
-  // Token valid for 15 minutes
   user.emailVerificationExpires =
     Date.now() + 15 * 60 * 1000;
 
@@ -277,10 +273,94 @@ async sendVerificationEmail(userId) {
   const verificationUrl =
     `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
+  await sendEmail({
+    to: user.email,
+    subject: "Verify Your NoteNexus AI Account",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Welcome to NoteNexus AI</h2>
+
+        <p>Hello ${user.fullName},</p>
+
+        <p>
+          Please verify your email address to activate your
+          NoteNexus AI account.
+        </p>
+
+        <p>
+          <a
+            href="${verificationUrl}"
+            style="
+              display: inline-block;
+              padding: 12px 20px;
+              background: #2563eb;
+              color: white;
+              text-decoration: none;
+              border-radius: 6px;
+            "
+          >
+            Verify Email
+          </a>
+        </p>
+
+        <p>This verification link expires in 15 minutes.</p>
+
+        <p>
+          If you did not create this account, you can safely ignore
+          this email.
+        </p>
+
+        <p>Regards,<br />NoteNexus AI Team</p>
+      </div>
+    `,
+  });
+
   return {
-    email: user.email,
-    verificationUrl,
+    message: "Verification email sent successfully.",
   };
+}
+
+/**
+ * Verify user email
+ */
+async verifyEmail(verificationToken) {
+  if (!verificationToken) {
+    throw new ApiError(400, "Verification token is required.");
+  }
+
+  // Hash token received from client
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  // Find user with valid verification token
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpires: {
+      $gt: Date.now(),
+    },
+  }).select(
+    "+emailVerificationToken +emailVerificationExpires"
+  );
+
+  if (!user) {
+    throw new ApiError(
+      400,
+      "Invalid or expired verification token."
+    );
+  }
+
+  // Mark email as verified
+  user.isVerified = true;
+
+  // Remove verification token
+  user.emailVerificationToken = "";
+  user.emailVerificationExpires = null;
+
+  await user.save();
+
+  return true;
 }
 
 }

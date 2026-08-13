@@ -113,4 +113,19 @@ const resetPassword = asyncHandler(async (req, res) => {
   );
 });
 
-export { register, login, logout, refreshAccessToken, forgotPassword, resetPassword };
+const sendVerificationEmail = asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+
+  const result =
+    await authService.sendVerificationEmail(userId);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      result.message,
+      null
+    )
+  );
+});
+
+export { register, login, logout, refreshAccessToken, forgotPassword, resetPassword, sendVerificationEmail };
