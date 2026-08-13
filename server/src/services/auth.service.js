@@ -240,6 +240,49 @@ async resetPassword(resetToken, newPassword) {
 
   return true;
 }
+
+/**
+ * Send email verification
+ */
+async sendVerificationEmail(userId) {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  if (user.isVerified) {
+    throw new ApiError(400, "Email is already verified.");
+  }
+
+  // Generate secure verification token
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+
+  // Hash token before storing it in database
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  user.emailVerificationToken = hashedToken;
+
+  // Token valid for 15 minutes
+  user.emailVerificationExpires =
+    Date.now() + 15 * 60 * 1000;
+
+  await user.save({
+    validateBeforeSave: false,
+  });
+
+  const verificationUrl =
+    `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+  return {
+    email: user.email,
+    verificationUrl,
+  };
+}
+
 }
 
 export default new AuthService();
