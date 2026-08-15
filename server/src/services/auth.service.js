@@ -363,6 +363,23 @@ async verifyEmail(verificationToken) {
   return true;
 }
 
+/**
+ * Resend email verification
+ */
+async resendVerificationEmail(email) {
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  if (user.isVerified) {
+    throw new ApiError(400, "Email is already verified.");
+  }
+
+  return await this.sendVerificationEmail(user._id);
+}
+
 }
 
 export default new AuthService();
