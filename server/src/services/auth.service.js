@@ -113,7 +113,6 @@ async logout(userId) {
 
   return true;
 }
-
 /**
  * Refresh access token
  */
@@ -122,20 +121,9 @@ async refreshAccessToken(refreshToken) {
     throw new ApiError(401, "Refresh token is required.");
   }
 
-  const user = await User.findOne({ refreshToken }).select(
-    "+refreshToken"
-  );
-
-  if (!user) {
-    throw new ApiError(401, "Invalid refresh token.");
-  }
-
-  if (!user.isActive) {
-    throw new ApiError(403, "Your account has been deactivated.");
-  }
-
   let decoded;
 
+  // Verify refresh token
   try {
     decoded = jwt.verify(
       refreshToken,
@@ -149,13 +137,43 @@ async refreshAccessToken(refreshToken) {
     throw new ApiError(401, "Invalid refresh token.");
   }
 
-  if (decoded.id !== user._id.toString()) {
+  // Find user using token subject/id
+  const user = await User.findById(decoded.id).select(
+    "+refreshToken"
+  );
+
+  if (!user) {
     throw new ApiError(401, "Invalid refresh token.");
   }
 
-  const accessToken = user.generateAccessToken();
+  // Check account status
+  if (!user.isActive) {
+    throw new ApiError(
+      403,
+      "Your account has been deactivated."
+    );
+  }
 
-  return accessToken;
+  // Make sure the supplied token is the one stored for this user
+  if (user.refreshToken !== refreshToken) {
+    throw new ApiError(401, "Invalid refresh token.");
+  }
+
+  // Generate new token pair
+  const accessToken = user.generateAccessToken();
+  const newRefreshToken = user.generateRefreshToken();
+
+  // Rotate refresh token
+  user.refreshToken = newRefreshToken;
+
+  await user.save({
+    validateBeforeSave: false,
+  });
+
+  return {
+    accessToken,
+    refreshToken: newRefreshToken,
+  };
 }
 /**
  * Forgot password
@@ -173,7 +191,7 @@ async forgotPassword(email) {
   // Generate secure random reset token
   const resetToken = crypto.randomBytes(32).toString("hex");
 
-  // Store hashed token in database
+  // Store only hashed token in database
   const hashedToken = crypto
     .createHash("sha256")
     .update(resetToken)
@@ -189,11 +207,59 @@ async forgotPassword(email) {
     validateBeforeSave: false,
   });
 
-  return {
-    resetToken,
-  };
-}
+  // Password reset URL
+  const resetUrl =
+    `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
+  // Send reset email
+  await sendEmail({
+    to: user.email,
+    subject: "Reset Your NoteNexus AI Password",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Password Reset Request</h2>
+
+        <p>Hello ${user.fullName},</p>
+
+        <p>
+          We received a request to reset your NoteNexus AI password.
+        </p>
+
+        <p>
+          <a
+            href="${resetUrl}"
+            style="
+              display: inline-block;
+              padding: 12px 20px;
+              background: #2563eb;
+              color: white;
+              text-decoration: none;
+              border-radius: 6px;
+            "
+          >
+            Reset Password
+          </a>
+        </p>
+
+        <p>
+          This password reset link expires in 15 minutes.
+        </p>
+
+        <p>
+          If you did not request a password reset, you can safely
+          ignore this email.
+        </p>
+
+        <p>
+          Regards,<br />
+          NoteNexus AI Team
+        </p>
+      </div>
+    `,
+  });
+
+  return true;
+}
 /**
  * Reset password
  */

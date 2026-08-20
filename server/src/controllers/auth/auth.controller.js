@@ -62,11 +62,20 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies?.refreshToken;
 
-  const accessToken = await authService.refreshAccessToken(
-    refreshToken
-  );
+  const {
+    accessToken,
+    refreshToken: newRefreshToken,
+  } = await authService.refreshAccessToken(refreshToken);
+
+  // Replace old refresh token with rotated token
+  res.cookie("refreshToken", newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
   return res.status(200).json(
     new ApiResponse(
@@ -82,16 +91,13 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  const { resetToken } =
-    await authService.forgotPassword(email);
+  await authService.forgotPassword(email);
 
   return res.status(200).json(
     new ApiResponse(
       200,
-      "Password reset instructions generated successfully.",
-      {
-        resetToken,
-      }
+      "Password reset instructions have been sent to your email.",
+      null
     )
   );
 });
